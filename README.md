@@ -1,6 +1,5 @@
-# :repeat: :one: :collision: Remix One Click Plugin
+# :repeat: :one: :collision: ethPM Plugin
 
-**Generate a persistent interface for your smart contract directly from Remix.**
 
 <img width=300 alignText="center" src="./resources/screenshot-plugin.png"/>
 
