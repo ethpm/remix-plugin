@@ -25,8 +25,9 @@ module.exports = {
       }
     ]
   },
+  target: 'web',
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.js', '.jsx', '.ts'],
     plugins: [
       new TsconfigPathsPlugin({
         configFile: path.resolve(__dirname, './tsconfig.json')

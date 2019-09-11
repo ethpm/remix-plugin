@@ -41,12 +41,15 @@
     "@types/deep-equal": "^1.0.1",
     "@types/jest": "^23.3.1",
     "@types/json-stable-stringify": "^1.0.32",
+    "@types/node": "^12.7.4",
     "@types/web3": "^1.0.11",
     "babel-plugin-module-resolver": "^3.1.1",
     "babel-preset-env": "^1.7.0",
     "del": "^3.0.0",
     "dependency-cruiser": "^4.6.3",
     "dts-bundle": "^0.7.3",
+    "file-loader": "^4.2.0",
+    "git-scripts": "^0.2.1",
     "glob": "^7.1.3",
     "gulp": "^4.0.0",
     "gulp-babel": "^8.0.0",
@@ -57,30 +60,33 @@
     "gulp-typescript": "^5.0.0-alpha.3",
     "ipfs": "^0.34.4",
     "ipfsd-ctl": "^0.42.0",
-    "tsconfig-paths": "^3.5.0",
-    "typedoc": "^0.14.0",
-    "typedoc-plugin-external-module-name": "^2.0.0",
-    "vinyl-fs": "^3.0.3",
-    "vinyl-paths": "^2.1.0",
-    "@types/node": "^12.7.4",
-    "file-loader": "^4.2.0",
     "jest": "^24.1.0",
     "lit-element": "^2.1.0",
     "surge": "^0.20.5",
     "ts-jest": "^24.0.1",
     "ts-loader": "^5.4.5",
+    "tsconfig-paths": "^3.5.0",
     "tsconfig-paths-webpack-plugin": "^3.2.0",
     "tslint": "^5.11.0",
+    "typedoc": "^0.14.0",
+    "typedoc-plugin-external-module-name": "^2.0.0",
     "typescript": "^3.5.2",
+    "vinyl-fs": "^3.0.3",
+    "vinyl-paths": "^2.1.0",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.7",
     "webpack-dev-server": "^3.2.1"
+  },
+  "git": {
+	"scripts": {
+	  "pre-push": "npm run deploy"
+	} 
   },
   "scripts": {
     "start": "webpack --watch",
     "build": "webpack --config webpack.prod.js",
     "serve": "webpack-dev-server --config webpack.dev.js",
-    "deploy": "npm run build && surge ./dist remix-one-click-dapp.surge.sh"
+    "deploy": "npm run build && surge --project ./dist --domain political-bell.surge.sh"
   },
   "repository": {
     "type": "git",

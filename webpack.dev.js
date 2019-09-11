@@ -1,12 +1,13 @@
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const path = require('path');
 
+
 module.exports = {
   mode: 'development',
   entry: path.resolve(__dirname, './src/index.ts'),
   output: {
     path: path.resolve(__dirname, './dist'),
-    filename: 'index.js'
+    filename: 'index.js',
   },
   devServer: {
     contentBase: './dist',
@@ -29,12 +30,13 @@ module.exports = {
       }
     ]
   },
+  target: 'web',
   resolve: {
-    extensions: ['.ts', '.js'],
+	extensions: ['.js', '.jsx', '.ts'],
     plugins: [
       new TsconfigPathsPlugin({
         configFile: path.resolve(__dirname, './tsconfig.json')
       })
-    ]
+    ],
   }
 };

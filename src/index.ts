@@ -55,6 +55,7 @@ export class OneClickDapp extends LitElement {
   }
 
   async init() {
+	console.log('update!')
 	this.ethpm = await EthPM.configure({
 		manifests: "ethpm/manifests/v2",
 		storage: "ethpm/storage/ipfs",

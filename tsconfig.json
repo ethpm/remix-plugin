@@ -2,7 +2,7 @@
   "include": ["src", "profile"],
   "compilerOptions": {
     "esModuleInterop": true,
-    "baseUrl": ".",
+    "baseUrl": "./",
     "sourceMap": false,
     "noImplicitAny": false,
     "moduleResolution": "node",
