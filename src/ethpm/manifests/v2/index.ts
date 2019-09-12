@@ -174,9 +174,9 @@ namespace Fields {
     types: pkg.ContractTypes,
   ): schema.Deployments {
     return Object.assign({}, ...
-      Array.from(deployments.entries())
+      Object.entries(deployments)
         .map( ([ chainURI, deployment ]) => ({
-          [chainURI.href]: writeDeployment(deployment, types)
+          [chainURI]: writeDeployment(deployment, types)
 		})
       )
     );
@@ -345,9 +345,7 @@ export class Reader {
       license: metadata.license,
       description: metadata.description as pkg.Meta.Description,
       keywords: metadata.keywords as Array<pkg.Meta.Keyword>,
-      links: Object.entries(metadata.links || {}).map(
-        ([ resource, uri ]) => ({ resource, uri })
-      ),
+	  links: metadata.links
     };
   }
 
@@ -428,12 +426,8 @@ export class Writer {
 		  ? { keywords: metadata.keywords }
 		  : {},
 
-		(metadata.links && metadata.links.length > 0)
-		  ? {
-			  links: Object.assign({}, ...metadata.links.map(
-				({ resource, uri }) => ({ [resource]: uri })
-			  ))
-			}
+		(metadata.links && Object.keys(metadata.links).length > 0)
+		  ? { links: metadata.links }
 		  : {}
 	  );
 	}

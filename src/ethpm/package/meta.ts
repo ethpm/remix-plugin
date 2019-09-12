@@ -9,8 +9,7 @@ export namespace Meta {
   export type Keyword = string;
 
   export interface PackageMetaLink {
-    resource: string,
-    uri: string
+	[resource: string]: string
   }
 
   export interface PackageMeta {
@@ -18,6 +17,6 @@ export namespace Meta {
     license?: License,
     description?: Description,
     keywords?: Array<Keyword>,
-    links?: Array<PackageMetaLink>
+    links?: PackageMetaLink
   }
 }
