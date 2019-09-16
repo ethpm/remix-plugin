@@ -89,11 +89,11 @@
     "start": "webpack --watch",
     "build": "webpack --config webpack.prod.js",
     "serve": "webpack-dev-server --config webpack.dev.js",
-    "deploy": "npm run build && surge --project ./dist --domain political-bell.surge.sh"
+    "deploy": "npm run build && surge --project ./dist --domain ethpm.surge.sh"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pi0neerpat/remix-one-click-plugin.git"
+    "url": "git+https://github.com/ethpm/remix-plugin"
   },
   "keywords": [
     "smart contract",
@@ -101,12 +101,12 @@
     "abi",
     "dapp",
     "web3",
-    "one click"
+    "ethpm"
   ],
   "author": "Nick Gheorghita",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/pi0neerpat/remix-one-click-plugin/issues"
+    "url": "https://github.com/ethpm/remix-plugin"
   },
-  "homepage": "https://github.com/pi0neerpat/remix-one-click-plugin#readme"
+  "homepage": "https://github.com/ethpm/remix-plugin"
 }
