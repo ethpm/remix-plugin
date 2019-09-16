@@ -2,54 +2,54 @@
  * @module "ethpm/manifests/v2"
  */
 
-const deepEqual = require("deep-equal");
-import * as t from "io-ts";
-import { ThrowReporter } from "io-ts/lib/ThrowReporter";
+const deepEqual = require('deep-equal');
+import * as t from 'io-ts';
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
-//import { URL } from "url";
-import stringify from "json-stable-stringify";
-var Ajv = require('ajv');
+// import { URL } from "url";
+import stringify from 'json-stable-stringify';
+const AJV = require('ajv');
 
-import { lift, lift2 } from "../../types";
-import * as schema from "ethpm-spec";
-var ethpmSpec = require('./schema.json');
-import * as config from "../../config";
-import * as pkg from "../../package";
-import * as manifests from "../../manifests/service";
+import { lift, lift2 } from '../../types';
+import * as schema from 'ethpm-spec';
+const ethpmSpec = require('./schema.json');
+import * as config from '../../config';
+import * as pkg from '../../package';
+import * as manifests from '../../manifests/service';
 
-const VERSION = "2";
+const VERSION = '2';
 
 namespace Fields {
-  export function readContractTypes (contractTypes: schema.ContractTypes): pkg.ContractTypes {
+  export function readContractTypes(contractTypes: schema.ContractTypes): pkg.ContractTypes {
     return Object.assign(
       {},
       ...Object.entries(contractTypes)
         .map(
           ([ alias, contractType ]) => ({
-            [alias]: readContractType(contractType, alias)
-          })
-        )
+            [alias]: readContractType(contractType, alias),
+          }),
+        ),
     );
   }
 
-  export function readDeployments (
+  export function readDeployments(
     deployments: schema.Deployments,
-    types: pkg.ContractTypes
+    types: pkg.ContractTypes,
   ): pkg.Deployments {
     return new Map(
       Object.entries(deployments)
         .map(
           ([ chainURI, deployment ]) => ([
             new URL(chainURI),
-            readDeployment(deployment, types)
-          ] as [pkg.ChainURI, pkg.Deployment])
-        )
+            readDeployment(deployment, types),
+          ] as [pkg.ChainURI, pkg.Deployment]),
+        ),
     );
   }
 
-  export function readContractType (
+  export function readContractType(
     contractType: schema.ContractType,
-    alias: string
+    alias: string,
   ): pkg.ContractType {
     return {
       contractName: contractType.contract_name || alias,
@@ -57,13 +57,13 @@ namespace Fields {
       runtimeBytecode: lift(readBytecode)(contractType.runtime_bytecode),
       abi: contractType.abi,
       natspec: contractType.natspec,
-      compiler: lift(readCompiler)(contractType.compiler)
+      compiler: lift(readCompiler)(contractType.compiler),
     };
   }
 
   export function readBytecode(
     bytecode?: schema.BytecodeObject,
-    parent?: pkg.Bytecode
+    parent?: pkg.Bytecode,
   ): pkg.Bytecode | undefined {
     // bytecode of some kind is required
     if (!bytecode) {
@@ -93,24 +93,24 @@ namespace Fields {
   }
 
   export function readLinkDependencies(
-    linkDependencies: schema.LinkDependencies
+    linkDependencies: schema.LinkDependencies,
   ): Array<pkg.Link.Value> {
     return [
       ...(linkDependencies || [])
         .map(
           ({ offsets, value, type }) => ({
             offsets,
-            value: (type === "literal")
+            value: (type === 'literal')
               ? {
                 value: value as string,
-                type: type as "literal"
+                type: type as 'literal',
               }
               : {
                 value: value as string,
-                type: type as "reference"
-              }
-          })
-        )
+                type: type as 'reference',
+              },
+          }),
+        ),
       ];
   }
 
@@ -122,22 +122,22 @@ namespace Fields {
     };
   }
 
-  export function readDeployment (
+  export function readDeployment(
     deployment: schema.Deployment,
-    types: pkg.ContractTypes
+    types: pkg.ContractTypes,
   ): pkg.Deployment {
     return Object.assign(
       {}, ...Object.entries(deployment) .map(
         ([ name, instance ]) => ({
-          [name]: readInstance(instance, types)
-        })
-      )
+          [name]: readInstance(instance, types),
+        }),
+      ),
     );
   }
 
-  export function readInstance (
+  export function readInstance(
     instance: schema.ContractInstance,
-    types: pkg.ContractTypes
+    types: pkg.ContractTypes,
   ): pkg.ContractInstance {
     return {
       contractType: instance.contract_type,
@@ -146,45 +146,44 @@ namespace Fields {
       block: instance.block,
       deploymentBytecode: readBytecode(
         instance.deployment_bytecode,
-        (types[instance.contract_type] || {}).deploymentBytecode
+        (types[instance.contract_type] || {}).deploymentBytecode,
       ),
       runtimeBytecode: readBytecode(
         instance.runtime_bytecode,
-        (types[instance.contract_type] || {}).runtimeBytecode
+        (types[instance.contract_type] || {}).runtimeBytecode,
       ),
       compiler: lift(readCompiler)(instance.compiler),
-    }
+    };
   }
 
-
-  export function writeContractTypes (contractTypes: pkg.ContractTypes): schema.ContractTypes {
+  export function writeContractTypes(contractTypes: pkg.ContractTypes): schema.ContractTypes {
     return Object.assign(
       {},
       ...Object.entries(contractTypes)
         .map(
           ([ alias, contractType ]) => ({
-            [alias]: writeContractType(contractType, alias)
-          })
-        )
+            [alias]: writeContractType(contractType, alias),
+          }),
+        ),
     );
   }
 
-  export function writeDeployments (
+  export function writeDeployments(
     deployments: pkg.Deployments,
     types: pkg.ContractTypes,
   ): schema.Deployments {
     return Object.assign({}, ...
       Object.entries(deployments)
         .map( ([ chainURI, deployment ]) => ({
-          [chainURI]: writeDeployment(deployment, types)
-		})
-      )
+          [chainURI]: writeDeployment(deployment, types),
+        }),
+      ),
     );
   }
 
-  export function writeContractType (
+  export function writeContractType(
     contractType: pkg.ContractType,
-    alias: pkg.ContractAlias
+    alias: pkg.ContractAlias,
   ): schema.ContractType {
     return Object.assign(
       {
@@ -192,24 +191,24 @@ namespace Fields {
         runtime_bytecode: lift(writeBytecode)(contractType.runtimeBytecode),
         abi: contractType.abi,
         natspec: contractType.natspec,
-        compiler: lift(writeCompiler)(contractType.compiler)
+        compiler: lift(writeCompiler)(contractType.compiler),
       },
 
-      (contractType.contractName != alias)
+      (contractType.contractName !== alias)
         ? { contract_name: contractType.contractName }
-        : {}
+        : {},
     );
   }
 
   export function writeBytecode(
     bytecode: pkg.Bytecode,
-    parent?: pkg.Bytecode
+    parent?: pkg.Bytecode,
   ): schema.BytecodeObject {
     return Object.assign(
       {},
 
       // possibly include bytecode
-      (!parent || bytecode.bytecode != parent.bytecode)
+      (!parent || bytecode.bytecode !== parent.bytecode)
         ? { bytecode: bytecode.bytecode }
         : {},
 
@@ -230,22 +229,22 @@ namespace Fields {
         )
       )
         ? { link_dependencies: writeLinkDependencies(bytecode.linkDependencies) }
-        : {}
+        : {},
     );
   }
 
   export function writeLinkDependencies(
-    linkDependencies: Array<pkg.Link.Value>
+    linkDependencies: Array<pkg.Link.Value>,
   ): schema.LinkDependencies {
     return [
       ...(linkDependencies || [])
         .map(
           ({ offsets, value }) => Object.assign(
             { offsets },
-            "type" in value ? { type: value.type } : {},
-            "value" in value ? { value: value.value } : {}
-          )
-        )
+            'type' in value ? { type: value.type } : {},
+            'value' in value ? { value: value.value } : {},
+          ),
+        ),
       ];
   }
 
@@ -257,22 +256,22 @@ namespace Fields {
     };
   }
 
-  export function writeDeployment (
+  export function writeDeployment(
     deployment: pkg.Deployment,
-    types: pkg.ContractTypes
+    types: pkg.ContractTypes,
   ): schema.Deployment {
     return Object.assign(
       {}, ...Object.entries(deployment).map(
         ([ name, instance ]) => ({
-          [name]: writeInstance(instance, types)
-        })
-      )
+          [name]: writeInstance(instance, types),
+        }),
+      ),
     );
   }
 
-  export function writeInstance (
+  export function writeInstance(
     instance: pkg.ContractInstance,
-    types: pkg.ContractTypes
+    types: pkg.ContractTypes,
   ): schema.ContractInstance {
     return Object.assign(
       {
@@ -285,8 +284,8 @@ namespace Fields {
         ? {
             deployment_bytecode: writeBytecode(
               instance.deploymentBytecode,
-              (types[instance.contractType] || {}).deploymentBytecode
-            )
+              (types[instance.contractType] || {}).deploymentBytecode,
+            ),
           }
         : {},
 
@@ -294,15 +293,15 @@ namespace Fields {
         ? {
             runtime_bytecode: writeBytecode(
               instance.runtimeBytecode,
-              (types[instance.contractType] || {}).runtimeBytecode
-            )
+              (types[instance.contractType] || {}).runtimeBytecode,
+            ),
           }
         : {},
 
       instance.transaction ? { transaction: instance.transaction } : {},
 
       instance.block ? { block: instance.block } : {},
-    )
+    );
   }
 }
 
@@ -310,10 +309,10 @@ export class Reader {
   private manifest: schema.PackageManifest;
 
   constructor (manifest: schema.PackageManifest) {
-	var ajv = new Ajv();
-	var validate = ajv.compile(ethpmSpec);
-	var valid = validate(manifest);
-	if (!valid) console.log(validate.errors);
+        const ajv = new AJV();
+        const validate = ajv.compile(ethpmSpec);
+        const valid = validate(manifest);
+        if (!valid) console.log(validate.errors);
     this.manifest = manifest;
   }
 
@@ -325,7 +324,7 @@ export class Reader {
       sources: this.sources,
       contractTypes: this.contractTypes,
       deployments: this.deployments,
-      buildDependencies: this.buildDependencies
+      buildDependencies: this.buildDependencies,
     };
   }
 
@@ -345,7 +344,7 @@ export class Reader {
       license: metadata.license,
       description: metadata.description as pkg.Meta.Description,
       keywords: metadata.keywords as Array<pkg.Meta.Keyword>,
-	  links: metadata.links
+          links: metadata.links,
     };
   }
 
@@ -359,9 +358,9 @@ export class Reader {
           try {
             return { [path]: new URL(source) as pkg.ContentURI };
           } catch (e) {
-            return { [path]: source as pkg.SourceString }
+            return { [path]: source as pkg.SourceString };
           }
-        })
+        }),
     );
   }
 
@@ -372,7 +371,7 @@ export class Reader {
   get deployments () {
     return Fields.readDeployments(
       this.manifest.deployments || {},
-      this.contractTypes
+      this.contractTypes,
     );
   }
 
@@ -382,9 +381,9 @@ export class Reader {
       ...Object.entries(this.manifest.build_dependencies || {})
         .map(
           ([ name, contentURI ]) => ({
-            [name]: new URL(contentURI)
-          })
-        )
+            [name]: new URL(contentURI),
+          }),
+        ),
     );
   }
 }
@@ -392,8 +391,8 @@ export class Reader {
 export class Writer {
   private package: pkg.Package;
 
-  constructor (package_: pkg.Package) {
-    this.package = package_;
+  constructor (packageInit: pkg.Package) {
+    this.package = packageInit;
   }
 
   get package_name () {
@@ -406,31 +405,31 @@ export class Writer {
 
   get meta () {
     const metadata = this.package.meta;
-	if (!this.package.meta) {
-	  return null;
-	} else {
-	  return Object.assign(
-		(metadata.authors && metadata.authors.length > 0)
-		  ? { authors: metadata.authors }
-		  : {},
+        if (!this.package.meta) {
+          return null;
+        } else {
+          return Object.assign(
+                (metadata.authors && metadata.authors.length > 0)
+                  ? { authors: metadata.authors }
+                  : {},
 
-		(metadata.license)
-		  ? { license: metadata.license }
-		  : {},
+                (metadata.license)
+                  ? { license: metadata.license }
+                  : {},
 
-		(metadata.description)
-		  ? { description: metadata.description }
-		  : {},
+                (metadata.description)
+                  ? { description: metadata.description }
+                  : {},
 
-		(metadata.keywords && metadata.keywords.length > 0)
-		  ? { keywords: metadata.keywords }
-		  : {},
+                (metadata.keywords && metadata.keywords.length > 0)
+                  ? { keywords: metadata.keywords }
+                  : {},
 
-		(metadata.links && Object.keys(metadata.links).length > 0)
-		  ? { links: metadata.links }
-		  : {}
-	  );
-	}
+                (metadata.links && Object.keys(metadata.links).length > 0)
+                  ? { links: metadata.links }
+                  : {},
+          );
+        }
   }
 
   get sources () {
@@ -442,8 +441,8 @@ export class Writer {
         .map(
           ([ path, source ]) => (source)
              ? { [path]: source }
-             : { [path]: source }
-        )
+             : { [path]: source },
+        ),
     );
   }
 
@@ -452,27 +451,27 @@ export class Writer {
   }
 
   get deployments () {
-	if (this.package.deployments) {
-	  return Fields.writeDeployments(this.package.deployments, this.package.contractTypes);
-	} else {
-	  return {}	
-	}
+        if (this.package.deployments) {
+          return Fields.writeDeployments(this.package.deployments, this.package.contractTypes);
+        } else {
+          return {};
+        }
   }
 
   get build_dependencies () {
-	if (!this.package.buildDependencies) {
-	  return null
-	} else {
-	  return Object.assign(
-		{},
-		...Object.entries(this.package.buildDependencies)
-		  .map(
-			([ name, contentURI ]) => ({
-			  [name]: contentURI.href
-			})
-		  )
-	  );
-	}
+        if (!this.package.buildDependencies) {
+          return null;
+        } else {
+          return Object.assign(
+                {},
+                ...Object.entries(this.package.buildDependencies)
+                  .map(
+                        ([ name, contentURI ]) => ({
+                          [name]: contentURI.href,
+                        }),
+                  ),
+          );
+        }
   }
 
   write (): schema.PackageManifest {
@@ -484,16 +483,16 @@ export class Writer {
       },
 
       ...Object.entries({
-        "deployments": this.deployments,
-        "contract_types": this.contract_types,
-        "sources": this.sources,
-        "build_dependencies": this.build_dependencies,
-        "meta": this.meta
+        deployments: this.deployments,
+        contract_types: this.contract_types,
+        sources: this.sources,
+        build_dependencies: this.build_dependencies,
+        meta: this.meta,
       }).map(
         ([field, obj]) => (obj && Object.keys(obj).length > 0)
           ? { [field]: obj }
-          : {}
-      )
+          : {},
+      ),
     ) as schema.PackageManifest;
   }
 }
@@ -508,8 +507,8 @@ const v2 = {
     new Reader(JSON.parse(json) as schema.PackageManifest).read(),
 
   write: async (pkg: pkg.Package) =>
-    stringify(await new Writer(pkg).write())
-}
+    stringify(await new Writer(pkg).write()),
+};
 
 export { v2 };
 

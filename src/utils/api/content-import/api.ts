@@ -1,9 +1,9 @@
-import { ContentImport } from './type'
-import { StatusEvents } from '../../types'
+import { ContentImport } from './type';
+import { StatusEvents } from '../../types';
 
 export interface IContentImport {
-  events: {} & StatusEvents
+  events: {} & StatusEvents;
   methods: {
-    resolve(path: string): ContentImport
-  }
+    resolve(path: string): ContentImport,
+  };
 }

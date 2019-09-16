@@ -2,8 +2,8 @@
  * @module "ethpm/config"
  */
 
-import * as t from "io-ts/lib";
-import { ThrowReporter } from "io-ts/lib/ThrowReporter";
+import * as t from 'io-ts/lib';
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 
 export type ConfigValue<S = any> =
   string | (() => Connector<S>) | ({ default: () => Connector<S> });
@@ -13,9 +13,9 @@ export type HasStorage = { storage: any };
 export type HasRegistries = { registries: any };
 export type Complete = HasManifests & HasStorage & HasRegistries;
 
-import * as manifests from "../manifests/service";
-import * as storage from "../storage/service";
-import * as registries from "../registries/service";
+import * as manifests from '../manifests/service';
+import * as storage from '../storage/service';
+import * as registries from '../registries/service';
 
 /**
  * Polymorphic type alias for any object that exposes keys for any or all
@@ -26,7 +26,7 @@ export type Config =
       HasManifests & HasStorage |
       HasManifests & HasRegistries |
       HasStorage & HasRegistries |
-      HasManifests & HasStorage & HasRegistries
+      HasManifests & HasStorage & HasRegistries;
 
 export type RawConfig<T extends Config> = {
   [K in keyof T]: ConfigValue<Workspace<T>[K]>
@@ -39,9 +39,9 @@ export abstract class Connector<S> {
 
   async connect (options: t.mixed): Promise<S> {
     const validation = this.optionsType.decode(options);
-	if (!validation.isRight()) {
-	  ThrowReporter.report(validation);
-	}
+    if (!validation.isRight()) {
+      ThrowReporter.report(validation);
+    }
 
     return this.init(validation.value);
   }
@@ -49,12 +49,12 @@ export abstract class Connector<S> {
 
 export type Workspace<T extends Config> = {
   [K in keyof T]:
-    K extends "manifests" ? manifests.Service :
-    K extends "storage" ? storage.Service :
-    K extends "registries" ? registries.Service :
+    K extends 'manifests' ? manifests.Service :
+    K extends 'storage' ? storage.Service :
+    K extends 'registries' ? registries.Service :
     never
-}
+};
 
 export type Connectors<T extends Config> = {
   [K in keyof Workspace<T>]: Connector<Workspace<T>[K]>
-} & { [k: string]: Connector<any> }
+} & { [k: string]: Connector<any> };

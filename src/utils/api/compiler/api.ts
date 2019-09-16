@@ -1,5 +1,5 @@
-import { CompilationResult, CompilationFileSources } from './type'
-import { StatusEvents, Api } from '../../types'
+import { CompilationResult, CompilationFileSources } from './type';
+import { StatusEvents, Api } from '../../types';
 
 export interface ICompiler extends Api {
   events: {
@@ -7,11 +7,11 @@ export interface ICompiler extends Api {
       fileName: string,
       source: CompilationFileSources,
       languageVersion: string,
-      data: CompilationResult
-    ) => void
-  } & StatusEvents
+      data: CompilationResult,
+    ) => void,
+  } & StatusEvents;
   methods: {
     getCompilationResult(): CompilationResult
-    compile(fileName: string): void
-  }
+    compile(fileName: string): void,
+  };
 }

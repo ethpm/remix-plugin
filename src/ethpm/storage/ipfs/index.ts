@@ -2,15 +2,15 @@
  * @module "ethpm/storage/ipfs"
  */
 
-const IPFS = require("ipfs-http-client");
+const IPFS = require('ipfs-http-client');
 
-import * as t from "io-ts";
+import * as t from 'io-ts';
 
-import { Maybe } from "../../types";
-import * as config from "../../config";
-import * as storage from "../../storage";
+import { Maybe } from '../../types';
+import * as config from '../../config';
+import * as storage from '../../storage';
 
-import hash from "./hash";
+import hash from './hash';
 
 interface IpfsOptions {
   host: string;
@@ -32,7 +32,7 @@ export class IpfsService implements storage.Service {
     this.ipfs = new IPFS({
       host: this.host,
       port: this.port,
-      protocol: this.protocol
+      protocol: this.protocol,
     });
   }
 
@@ -43,7 +43,7 @@ export class IpfsService implements storage.Service {
   }
 
   async read(uri: URL): Promise<Maybe<string>> {
-    const hash = uri.toString().substring(7)
+    const hash = uri.toString().substring(7);
     const buffer = await this.ipfs.cat(hash);
 
     return buffer.toString();
@@ -65,8 +65,8 @@ export default class IpfsConnector extends config.Connector<storage.Service> {
     ipfs: t.interface({
       host: t.string,
       port: t.union([t.number, t.string]),
-      protocol: t.string
-    })
+      protocol: t.string,
+    }),
   });
 
   /**

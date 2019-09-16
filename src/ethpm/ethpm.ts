@@ -2,8 +2,8 @@
  * @module "ethpm"
  */
 
-import * as config from "./config";
-import * as session from "./session";
+import * as config from './config';
+import * as session from './session';
 
 /**
  * This module provides the external interface for configuring an EthPM
@@ -33,8 +33,8 @@ export namespace EthPM {
    * EthPM.js will `require()` the specified modules from your project's
    * `node_modules/` folder.
    */
-  export function configure<T extends config.Config> (
-    config: config.RawConfig<T>
+  export function configure<T extends config.Config>(
+    config: config.RawConfig<T>,
   ): session.Builder<T> {
     return new session.Builder(config);
   }

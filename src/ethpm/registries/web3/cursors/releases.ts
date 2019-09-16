@@ -2,11 +2,11 @@
  * @module "ethpm/registries/web3"
  */
 
-import Paged from "./paged";
+import Paged from './paged';
 
-import * as pkg from "../../../package";
-import BN from "bn.js";
-import Web3 from "web3";
+import * as pkg from '../../../package';
+import BN from 'bn.js';
+import Web3 from 'web3';
 
 type ResultType = Promise<pkg.Version>;
 
@@ -30,24 +30,24 @@ export default class ReleasesCursor extends Paged<BN> implements IterableIterato
     const promise: ResultType = new Promise((resolve, reject) => {
       const releaseId = this.getDatum(this.pointer);
       if (releaseId === null) {
-        resolve(""); // TODO: empty string or something else?
+        resolve(''); // TODO: empty string or something else?
       }
       else {
         const data = this.web3.eth.abi.encodeFunctionCall({
-          name: "getReleaseData",
-          type: "function",
+          name: 'getReleaseData',
+          type: 'function',
           inputs: [{
-            type: "bytes32",
-            name: "releaseId"
-          }]
-        }, ["0x" + releaseId.toString("hex")]);
+            type: 'bytes32',
+            name: 'releaseId',
+          }],
+        },                                                [`0x${releaseId.toString('hex')}`]);
 
         this.web3.eth.call({
           from: this.from,
           to: this.to,
-          data
+          data,
         }).then((result) => {
-          return this.web3.eth.abi.decodeParameters(["string", "string", "string"], result);
+          return this.web3.eth.abi.decodeParameters(['string', 'string', 'string'], result);
         }).then((parameters) => {
           resolve(parameters[1]);
         });
@@ -58,7 +58,7 @@ export default class ReleasesCursor extends Paged<BN> implements IterableIterato
 
     return {
       done: true,
-      value: promise
+      value: promise,
     };
   }
 
@@ -74,30 +74,30 @@ export default class ReleasesCursor extends Paged<BN> implements IterableIterato
         const limit = offset.add(this.pageSize).subn(1);
 
         const data = this.web3.eth.abi.encodeFunctionCall({
-          name: "getAllReleaseIds",
-          type: "function",
+          name: 'getAllReleaseIds',
+          type: 'function',
           inputs: [{
-            type: "string",
-            name: "packageName"
+            type: 'string',
+            name: 'packageName',
           }, {
-            type: "uint",
-            name: "offset"
+            type: 'uint',
+            name: 'offset',
           }, {
-            type: "uint",
-            name: "limit"
-          }]
-        }, ["0x" + offset.toString("hex"), "0x" + limit.toString("hex")]);
+            type: 'uint',
+            name: 'limit',
+          }],
+        },                                                [`0x${offset.toString('hex')}`, `0x${limit.toString('hex')}`]);
 
         const promise: ResultType = new Promise((resolve, reject) => {
           return this.web3.eth.call({
             from: this.from,
             to: this.to,
-            data
+            data,
           }).then((result) => {
             // split packageIds into an array of BNs
             // set the page
             // get/resolve the datum
-            const results = this.web3.eth.abi.decodeParameters(["bytes32[]", "uint"], result);
+            const results = this.web3.eth.abi.decodeParameters(['bytes32[]', 'uint'], result);
             const packageIds = results[0].map((id: string) => new BN(id));
             this.setPage(this.pointer, packageIds);
             return this.getReleaseData();
@@ -106,20 +106,20 @@ export default class ReleasesCursor extends Paged<BN> implements IterableIterato
 
         return {
           done: true,
-          value: promise
+          value: promise,
         };
       }
     } else {
       const promise: ResultType = new Promise((resolve, reject) => {
-        resolve(""); // TODO: empty string or something else?
+        resolve(''); // TODO: empty string or something else?
       });
 
       this.pointer = this.pointer.addn(1);
 
       return {
         done: true,
-        value: promise
-      }
+        value: promise,
+      };
     }
   }
 
