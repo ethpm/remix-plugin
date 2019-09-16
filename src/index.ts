@@ -1,19 +1,20 @@
 import { LitElement, html, customElement } from 'lit-element';
 import { createIframeClient } from '@remixproject/plugin';
+import { saveAs } from 'file-saver';
+import fs from 'fs';
+
+import { EthPM } from './ethpm';
+import { getBlockchainFromUri } from './utils/chains';
 import {
   CompilationFileSources,
   CompilationResult,
-  Status
+  Status,
 } from './utils';
 
-var _ = require('lodash');
-import { saveAs } from 'file-saver';
+const _ = require('lodash');
 const path = require('path');
-var Ajv = require('ajv');
+const AJV = require('ajv');
 const schema = require('./ethpm/manifests/v2/schema.json');
-import fs from 'fs';
-import { EthPM } from './ethpm';
-import { getBlockchainFromUri } from './utils/chains';
 
 type contractTypeData = {
   abi: any[];
@@ -30,7 +31,7 @@ type ContractTypeMap = {
 
 type SourcesMap = {
   [contractType: string]: string;
-}
+};
 
 type manifest = {
   manifest: object;
@@ -42,7 +43,7 @@ type manifestMap = {
 };
 
 @customElement('ethpm-dapp')
-export class ethpmDapp extends LitElement {
+export class EthpmDapp extends LitElement {
   /** client to communicate with the IDE */
   private client = createIframeClient();
   private contractTypes: ContractTypeMap = {};
@@ -61,16 +62,16 @@ export class ethpmDapp extends LitElement {
   }
 
   async init() {
-	this.ethpm = await EthPM.configure({
-		manifests: "ethpm/manifests/v2",
-		storage: "ethpm/storage/ipfs",
-	  }).connect({
-		ipfs: {
-		  host: "ipfs.infura.io",
-		  port: "5001",
-		  protocol: "https"
-		}
-	  });
+        this.ethpm = await EthPM.configure({
+                manifests: 'ethpm/manifests/v2',
+                storage: 'ethpm/storage/ipfs',
+          }).connect({
+                ipfs: {
+                  host: 'ipfs.infura.io',
+                  port: '5001',
+                  protocol: 'https',
+                },
+          });
 
     await this.client.onload();
     this.client.solidity.on(
@@ -79,19 +80,19 @@ export class ethpmDapp extends LitElement {
         file: string,
         src: CompilationFileSources,
         version: string,
-        result: CompilationResult
+        result: CompilationResult,
       ) => {
         if (!result) return;
         this.contractTypes = this.createContractTypes(result);
-		this.sources = this.createManifestSources(src)
+                this.sources = this.createManifestSources(src);
         const status: Status = {
           key: 'succeed',
           type: 'success',
-          title: 'New interface generated'
+          title: 'New interface generated',
         };
         this.client.emit('statusChanged', status);
         this.requestUpdate();
-      }
+      },
     );
   }
 
@@ -101,33 +102,37 @@ export class ethpmDapp extends LitElement {
   }
 
   processBytecode(bytecode: any) {
-	var bcObject = {}
-	var newBytecode = `0x${bytecode.object}`
-	if (!_.isEmpty(bytecode.linkReferences)) {
-	  var allOffsets = []
-	  // generate manifest link refs object
-	  var linkRefs = Object.keys(bytecode.linkReferences).map(key => {
-		return Object.keys(bytecode.linkReferences[key]).map(cType => {
-		  var ctypeOffsets = bytecode.linkReferences[key][cType].map(a => a.start)
-		  allOffsets.push(ctypeOffsets)
-		  return {
-			name: cType,
-			length: 20,
-			offsets: ctypeOffsets
-		  }
-		})
-	  })
-	  // replace solc link ref "___browser/contract.sol___" with 0s
-	  var numLinkRefs = linkRefs.length
-	  for (var i = 0; i < numLinkRefs; i++) {
-		var start = 2 + allOffsets[i] * 2
-		var tmpBytecode = newBytecode.substr(0, start) + '0'.repeat(40) + newBytecode.substr(start + 40, newBytecode.length)
-		newBytecode = tmpBytecode
-	  }
-	  bcObject['link_references'] = [].concat.apply([], linkRefs)
-	}
-	bcObject['bytecode'] = newBytecode
-	return bcObject
+        const bcObject = {};
+        let newBytecode = `0x${bytecode.object}`;
+        if (!_.isEmpty(bytecode.linkReferences)) {
+          const allOffsets = [];
+          // generate manifest link refs object
+          const linkRefs = Object.keys(bytecode.linkReferences).map(key => {
+                return Object.keys(bytecode.linkReferences[key]).map(cType => {
+                  const ctypeOffsets = bytecode.linkReferences[key][cType].map(a => a.start);
+                  allOffsets.push(ctypeOffsets);
+                  return {
+                        name: cType,
+                        length: 20,
+                        offsets: ctypeOffsets,
+                  };
+                });
+          });
+          // replace solc link ref "___browser/contract.sol___" with 0s
+          const numLinkRefs = linkRefs.length;
+          for (let i = 0; i < numLinkRefs; i++) {
+                const start = 2 + allOffsets[i] * 2;
+                const tmpBytecode = `
+					${newBytecode.substr(0, start)}
+					${'0'.repeat(40)}
+					${newBytecode.substr(start + 40, newBytecode.length)}
+				`;
+                newBytecode = tmpBytecode;
+          }
+          bcObject['link_references'] = [].concat.apply([], linkRefs);
+        }
+        bcObject['bytecode'] = newBytecode;
+        return bcObject;
   }
 
   // support vyper compiler
@@ -141,95 +146,95 @@ export class ethpmDapp extends LitElement {
     return Object.keys(result.contracts).reduce((acc, fileName) => {
       const contracts = result.contracts[fileName];
       Object.keys(contracts).forEach(
-		name => (acc[name] = {
-		  abi: contracts[name].abi,
-		  contractName: name,
-		  compiler: {
-			name: 'solc',
-			version: JSON.parse(contracts[name].metadata)['compiler']['version'],
-			settings: {
-			  optimize: JSON.parse(contracts[name].metadata)['settings']['optimizer']['enabled']
-			}
-		  },
-		  runtimeBytecode: this.processBytecode(contracts[name].evm.bytecode),
-		  deploymentBytecode: this.processBytecode(contracts[name].evm.deployedBytecode),
-		  natspec: _.merge(contracts[name].userdoc, contracts[name].devdoc)
-		})
+                name => (acc[name] = {
+                  abi: contracts[name].abi,
+                  contractName: name,
+                  compiler: {
+                        name: 'solc',
+                        version: JSON.parse(contracts[name].metadata)['compiler']['version'],
+                        settings: {
+                          optimize: JSON.parse(contracts[name].metadata)['settings']['optimizer']['enabled'],
+                        },
+                  },
+                  runtimeBytecode: this.processBytecode(contracts[name].evm.bytecode),
+                  deploymentBytecode: this.processBytecode(contracts[name].evm.deployedBytecode),
+                  natspec: _.merge(contracts[name].userdoc, contracts[name].devdoc),
+                }),
       );
       return acc;
-    }, {});
+    },                                          {});
   }
-  
+
   createManifestSources(src: CompilationFileSources) {
     return Object.keys(src.sources).reduce((acc, fileName) => {
-	  acc[`./${fileName}`] = src.sources[fileName].content;
+          acc[`./${fileName}`] = src.sources[fileName].content;
       return acc;
-    }, {});
+    },                                     {});
   }
 
   changeView() {
-	if (this.creatingPackages) {
-	  document.getElementById("creatingPackages").style.display = 'none';
-	  document.getElementById("importingPackages").style.display = 'block';
-	  this.creatingPackages = false
-	} else {
-	  document.getElementById("creatingPackages").style.display = 'block';
-	  document.getElementById("importingPackages").style.display = 'none';
-	  this.creatingPackages = true
-	}
-	this.requestUpdate()
+        if (this.creatingPackages) {
+          document.getElementById('creatingPackages').style.display = 'none';
+          document.getElementById('importingPackages').style.display = 'block';
+          this.creatingPackages = false;
+        } else {
+          document.getElementById('creatingPackages').style.display = 'block';
+          document.getElementById('importingPackages').style.display = 'none';
+          this.creatingPackages = true;
+        }
+        this.requestUpdate();
   }
 
   downloadRawManifest(name) {
-	var fileName = `${name}.json`;
-	var fileToSave = new Blob([JSON.stringify(this.manifests[name].manifest)], {
-		type: 'application/json',
-	});
-	saveAs(fileToSave, fileName);
+        const fileName = `${name}.json`;
+        const fileToSave = new Blob([JSON.stringify(this.manifests[name].manifest)], {
+                type: 'application/json',
+        });
+        saveAs(fileToSave, fileName);
   }
 
-  getManifestElementData(elementId, csv=false) {
-	const result = (<HTMLInputElement>(
-	  document.getElementById(elementId)
-	)).value;
-	if (result == "") {
-	  return null;
-	} else if (csv) {
-	  return result.split(',');
-	} else {
-	  return result;
-	}
+  getManifestElementData(elementId, csv= false) {
+        const result = (<HTMLInputElement>(
+          document.getElementById(elementId)
+        )).value;
+        if (result === '') {
+          return null;
+        } else if (csv) {
+          return result.split(',');
+        } else {
+          return result;
+        }
   }
 
   async generateManifest() {
     try {
       const packageName = (<HTMLInputElement>document.getElementById('packageName'))
         .value;
-	  if (!/^[a-z][-a-z0-9]{0,255}$/.test(packageName)) {
-		throw new Error('Please enter a valid name for your package. Package names must match regex: ^[a-z][-a-z0-9]{0,255}$.');
-	  }
+          if (!/^[a-z][-a-z0-9]{0,255}$/.test(packageName)) {
+                throw new Error('Please enter a valid name for your package. Package names must match regex: ^[a-z][-a-z0-9]{0,255}$.');
+          }
 
       const packageVersion = (<HTMLInputElement>(
         document.getElementById('packageVersion')
       )).value;
-	  if (!packageVersion) {
-		throw new Error('Please enter a package version.');
-	  }
+          if (!packageVersion) {
+                throw new Error('Please enter a package version.');
+          }
 
-	  const rawLinks = {
-		documentation: this.getManifestElementData('documentationLink'),
-		repository: this.getManifestElementData('repositoryLink'),
-		website: this.getManifestElementData('websiteLink'),
-	  }
-	  const filteredLinks = _.omitBy(rawLinks, _.isNull);
-	  const rawMeta = {
-		authors: this.getManifestElementData('authors', true),
-		license: this.getManifestElementData('license'),
-		description: this.getManifestElementData('description'),
-		keywords: this.getManifestElementData('keywords', true),
-		links: (_.isEmpty(filteredLinks)) ? null : filteredLinks,
-	  }
-	  const filteredMeta = _.omitBy(rawMeta, _.isNull);
+          const rawLinks = {
+                documentation: this.getManifestElementData('documentationLink'),
+                repository: this.getManifestElementData('repositoryLink'),
+                website: this.getManifestElementData('websiteLink'),
+          };
+          const filteredLinks = _.omitBy(rawLinks, _.isNull);
+          const rawMeta = {
+                authors: this.getManifestElementData('authors', true),
+                license: this.getManifestElementData('license'),
+                description: this.getManifestElementData('description'),
+                keywords: this.getManifestElementData('keywords', true),
+                links: (_.isEmpty(filteredLinks)) ? null : filteredLinks,
+          };
+          const filteredMeta = _.omitBy(rawMeta, _.isNull);
 
       const selectedContractTypes = [].slice
         .call(document.querySelectorAll('input[type=checkbox]:checked'))
@@ -237,114 +242,120 @@ export class ethpmDapp extends LitElement {
           return (<HTMLInputElement>checked).value;
         });
 
-	  const targetContract = selectedContractTypes[0];
-	  const targetContractType = this.contractTypes[targetContract];
-	  const contractTypeData = selectedContractTypes.reduce((o, key) => ({ ...o, [key]: this.contractTypes[key]}), {})
-	  const rawManifest = {
-		packageName: packageName,
-		manifestVersion: '2',
-		version: packageVersion,
-		meta: (_.isEmpty(filteredMeta)) ? null : filteredMeta,
-		sources: this.sources,
-		contractTypes: contractTypeData,
-	  }
+          const targetContract = selectedContractTypes[0];
+          const targetContractType = this.contractTypes[targetContract];
+          const contractTypeData = selectedContractTypes.reduce(
+            (o, key) => ({ ...o, [key]: this.contractTypes[key]}),
+            {});
+          const rawManifest = {
+                packageName,
+                manifestVersion: '2',
+                version: packageVersion,
+                meta: (_.isEmpty(filteredMeta)) ? null : filteredMeta,
+                sources: this.sources,
+                contractTypes: contractTypeData,
+          };
 
-	  const filteredManifest = _.omitBy(rawManifest, _.isNull);
-	  this.showAlert(undefined, `Manifest created and pushing to IPFS, this could take a minute.`);
+          const filteredManifest = _.omitBy(rawManifest, _.isNull);
+          this.showAlert(undefined, 'Manifest created and pushing to IPFS, this could take a minute.');
 
-	  // Manifest json schema validation
-	  const createdManifest = await this.ethpm.manifests.write(filteredManifest);
-	  var ajv = new Ajv();
-	  var valid = ajv.validate(schema, JSON.parse(createdManifest));
-	  if (!valid) throw new Error(`Invalid manifest generated. ${ajv.errorsText()}`);
-	  const manifestUri = await this.ethpm.storage.write(createdManifest);
+          // Manifest json schema validation
+          const createdManifest = await this.ethpm.manifests.write(filteredManifest);
+          const ajv = new AJV();
+          const valid = ajv.validate(schema, JSON.parse(createdManifest));
+          if (!valid) throw new Error(`Invalid manifest generated. ${ajv.errorsText()}`);
+          const manifestUri = await this.ethpm.storage.write(createdManifest);
 
       this.client.emit('statusChanged', {
         key: 'loading',
         type: 'info',
-        title: 'Generating ...'
+        title: 'Generating ...',
       });
-	  this.manifests[packageName] = {
-		  manifest: createdManifest,
-		  ipfsUri: manifestUri
-	  };
-	  this.showAlert(undefined, `Nice package! Use the ethPM-CLI to publish it to your registry!`);
-	  setTimeout(() => {
-		this.client.emit('statusChanged', { key: 'none' });
-	  }, 10000);
-	} catch (err) {
-	  console.log(err)
-	  this.showAlert(err, undefined);
-	}
+          this.manifests[packageName] = {
+                  manifest: createdManifest,
+                  ipfsUri: manifestUri,
+          };
+          this.showAlert(undefined, 'Nice package! Use the ethPM-CLI to publish it to your registry!');
+          setTimeout(() => {
+                this.client.emit('statusChanged', { key: 'none' });
+          },         10000);
+        } catch (err) {
+          console.log(err);
+          this.showAlert(err, undefined);
+        }
   }
 
   async processFilePath(fileName) {
-	const baseName = path.basename(fileName)
-	const file = baseName.split('.')[0]
-	const extension = baseName.split('.')[1]
-	var browserPath = `browser/${baseName}`
-	var exists = await this.client.fileManager.getFile(browserPath)
-	var i = 1
-	if (exists != null) {
-	  do {
-		var pathSegments = baseName.split('.')
-		browserPath = `browser/${pathSegments[0]}-${i}.${extension}`
-		exists = await this.client.fileManager.getFile(browserPath)
-		i ++
-	  }
-	  while (exists != null)
-	}
-	return browserPath
+        const baseName = path.basename(fileName);
+        const file = baseName.split('.')[0];
+        const extension = baseName.split('.')[1];
+        let browserPath = `browser/${baseName}`;
+        let exists = await this.client.fileManager.getFile(browserPath);
+        let i = 1;
+        if (exists != null) {
+          do {
+                const pathSegments = baseName.split('.');
+                browserPath = `browser/${pathSegments[0]}-${i}.${extension}`;
+                exists = await this.client.fileManager.getFile(browserPath);
+                i ++;
+          }
+          while (exists != null);
+        }
+        return browserPath;
   }
 
   async processImportedSources(sources: any) {
-	return Object.keys(sources).reduce((acc, fileName) => {
+        return Object.keys(sources).reduce((acc, fileName) => {
       Object.keys(sources).forEach(
-		async name => (acc[fileName] = {
-		  orignalPath: fileName,
-		  newPath: await this.processFilePath(fileName),
-		  content: sources[fileName]
-		})
+                async name => (acc[fileName] = {
+                  orignalPath: fileName,
+                  newPath: await this.processFilePath(fileName),
+                  content: sources[fileName],
+                }),
       );
       return acc;
-    }, {});
+    },                                     {});
   }
 
   async importSource(name) {
-	await this.client.call('fileManager', 'setFile', this.importedSources[name].newPath, this.importedSources[name].content);
-	delete this.importedSources[name];
-	this.requestUpdate()
+        await this.client.call(
+          'fileManager',
+          'setFile',
+          this.importedSources[name].newPath,
+          this.importedSources[name].content,
+        );
+        delete this.importedSources[name];
+        this.requestUpdate();
   }
 
   async importManifest() {
-	try {
-	  const url = this.getManifestElementData('importUrl')
-	  this.showAlert(undefined, `Importing manifest from ${url}.`);
-	  const rawManifest = await this.ethpm.storage.read(url)
-	  const manifest = await this.ethpm.manifests.read(rawManifest)
-	  const sources = await this.processImportedSources(manifest.sources)
+        try {
+          const url = this.getManifestElementData('importUrl');
+          this.showAlert(undefined, `Importing manifest from ${url}.`);
+          const rawManifest = await this.ethpm.storage.read(url);
+          const manifest = await this.ethpm.manifests.read(rawManifest);
+          const sources = await this.processImportedSources(manifest.sources);
       this.client.emit('statusChanged', {
         key: 'loading',
         type: 'info',
-        title: 'Loading manifests ...'
+        title: 'Loading manifests ...',
       });
-	  this.importedSources = sources
-	  this.importedManifest = manifest
-	  let obj = Array.from(manifest.deployments).reduce((obj, [key, value]) => (
-		Object.assign(obj, { [key]: value })
-	  ), {});
-	  this.importedDeployments = obj
-	} catch (err) {
-	  console.log(err)
-	  this.showAlert(err, undefined);
-	}
+          this.importedSources = sources;
+          this.importedManifest = manifest;
+          const obj = Array.from(manifest.deployments).reduce((obj, [key, value]) => (
+                Object.assign(obj, { [key]: value })
+          ),                                                  {});
+          this.importedDeployments = obj;
+        } catch (err) {
+          console.log(err);
+          this.showAlert(err, undefined);
+        }
   }
 
-
   async importDeployment(name, alias) {
-	var abi = JSON.stringify(this.importedManifest.contractTypes[name].abi)
-	var importDeploymentFilename = await this.processFilePath(`./${name}.abi`)
-	await this.client.call('fileManager', 'setFile', importDeploymentFilename, abi);
+        const abi = JSON.stringify(this.importedManifest.contractTypes[name].abi);
+        const importDeploymentFilename = await this.processFilePath(`./${name}.abi`);
+        await this.client.call('fileManager', 'setFile', importDeploymentFilename, abi);
   }
 
   showAlert(err?: string, message?: string) {
@@ -358,7 +369,7 @@ export class ethpmDapp extends LitElement {
     setTimeout(() => {
       this.contractAlerts = {};
       this.requestUpdate();
-    }, 5000);
+    },         5000);
   }
 
   render() {
@@ -366,8 +377,8 @@ export class ethpmDapp extends LitElement {
     const isImportedSources = Object.keys(this.importedSources).length > 0;
     const isImportedDeployments = Object.keys(this.importedDeployments).length > 0;
 
-	const sourcesHeader = isImportedSources ? html`<h2><b>Sources</b></h2>` : html``
-	const deploymentsHeader = isImportedDeployments ? html`<h2><b>Deployments</b></h2>` : html``
+    const sourcesHeader = isImportedSources ? html`<h2><b>Sources</b></h2>` : html``;
+    const deploymentsHeader = isImportedDeployments ? html`<h2><b>Deployments</b></h2>` : html``;
 
     const availableContracts = isContracts
       ? Object.keys(this.contractTypes).map((name, index) => {
@@ -401,7 +412,7 @@ export class ethpmDapp extends LitElement {
           }
         </div>
         <div class="form-group">
-		  <label for="packageName"><b>Package Name:</b> (required) </label>
+                  <label for="packageName"><b>Package Name:</b> (required) </label>
           <input
             type="text"
             class="form-control"
@@ -410,7 +421,7 @@ export class ethpmDapp extends LitElement {
           />
         </div>
         <div class="form-group">
-		  <label for="packageVersion"><b>Package Version:</b> (required) </label>
+                  <label for="packageVersion"><b>Package Version:</b> (required) </label>
           <input
             type="text"
             class="form-control"
@@ -418,70 +429,70 @@ export class ethpmDapp extends LitElement {
             ?disabled="${!isContracts}"
           />
         </div>
-		<div class="form-group">
-		  <label for="authors"><b>Authors:</b> (optional) (comma separated for multiple values)</label>
-		  <input
-			type="text"
-			class="form-control"
-			id="authors"
+                <div class="form-group">
+                  <label for="authors"><b>Authors:</b> (optional) (comma separated for multiple values)</label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="authors"
             ?disabled="${!isContracts}"
-		  />
-		</div>
-		<div class="form-group">
-		  <label for="license"><b>License:</b> (optional)</label>
-		  <input
-			type="text"
-			class="form-control"
-			id="license"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="license"><b>License:</b> (optional)</label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="license"
             ?disabled="${!isContracts}"
-		  />
-		</div>
-		<div class="form-group">
-		  <label for="description"><b>Description:</b> (optional)</label>
-		  <input
-			type="text"
-			class="form-control"
-			id="description"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="description"><b>Description:</b> (optional)</label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="description"
             ?disabled="${!isContracts}"
-		  />
-		</div>
-		<div class="form-group">
-		  <label for="keywords"><b>Keywords:</b> (optional) (comma separated for multiple values)</label>
-		  <input
-			type="text"
-			class="form-control"
-			id="keywords"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="keywords"><b>Keywords:</b> (optional) (comma separated for multiple values)</label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="keywords"
             ?disabled="${!isContracts}"
-		  />
-		</div>
-		<div class="form-group">
-		  <label for="documentationLink"><b>Link to documentation:</b> (optional)</label>
-		  <input
-			type="text"
-			class="form-control"
-			id="documentationLink"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="documentationLink"><b>Link to documentation:</b> (optional)</label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="documentationLink"
             ?disabled="${!isContracts}"
-		  />
-		</div>
-		<div class="form-group">
-		  <label for="repositoryLink"><b>Link to repository:</b> (optional)</label>
-		  <input
-			type="text"
-			class="form-control"
-			id="repositoryLink"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="repositoryLink"><b>Link to repository:</b> (optional)</label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="repositoryLink"
             ?disabled="${!isContracts}"
-		  />
-		</div>
-		<div class="form-group">
-		  <label for="websiteLink"><b>Link to website:</b> (optional)</label>
-		  <input
-			type="text"
-			class="form-control"
-			id="websiteLink"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="websiteLink"><b>Link to website:</b> (optional)</label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="websiteLink"
             ?disabled="${!isContracts}"
-		  />
-		</div>
-		<button
+                  />
+                </div>
+                <button
           type="submit"
           style="margin:10px 0 3px 0"
           class="btn btn-lg btn-primary mb-2"
@@ -505,22 +516,22 @@ export class ethpmDapp extends LitElement {
       </div>
     `;
 
-	const importManifests = html`
-	  <div>
-		<div class="form-group">
-		  <br>
-		  <p> 
-			This plugin currently supports importing packages only from IPFS urls.
-			You can find a variety of available registries and their packages in the <a href="https://docs.ethpm.com/public-registry-directory" target="_blank">ethPM Registry Directory</a>.
-		  </p>
-		  <label for="importUrl"><b>IPFS URL:</b></label>
-		  <input
-			type="text"
-			class="form-control"
-			id="importUrl"
-		  />
-		</div>
-		<button
+        const importManifests = html`
+          <div>
+                <div class="form-group">
+                  <br>
+                  <p>
+                        This plugin currently supports importing packages only from IPFS urls.
+                        You can find a variety of available registries and their packages in the <a href="https://docs.ethpm.com/public-registry-directory" target="_blank">ethPM Registry Directory</a>.
+                  </p>
+                  <label for="importUrl"><b>IPFS URL:</b></label>
+                  <input
+                        type="text"
+                        class="form-control"
+                        id="importUrl"
+                  />
+                </div>
+                <button
           type="submit"
           style="margin:10px 0 3px 0"
           class="btn btn-lg btn-primary mb-2"
@@ -528,51 +539,50 @@ export class ethpmDapp extends LitElement {
         >
           Import Manifest
         </button>
-	  </div>
-	`;
+          </div>
+        `;
 
-	const importedSourcesList = Object.keys(this.importedSources).map((name, index) => {
+        const importedSourcesList = Object.keys(this.importedSources).map((name, index) => {
       return html`
         <div class="card" style="margin-top:7px">
           <div class="card-body" style="padding: 7px">
-			<h5 class="card-title"><b>Source:</b> <code>${name}</code></h5>
-			<h5 class="card-title"><b>Import to:</b> <code>${this.importedSources[name].newPath}</code></h5>
-			<button
-			  type="submit"
-			  style="margin:10px 0 3px 0;float:right;margin-top:-60px;"
-			  class="btn btn-lg btn-primary mb-2"
-			  @click="${() => this.importSource(name)}"
-			  >Import</a
+                        <h5 class="card-title"><b>Source:</b> <code>${name}</code></h5>
+                        <h5 class="card-title"><b>Import to:</b> <code>${this.importedSources[name].newPath}</code></h5>
+                        <button
+                          type="submit"
+                          style="margin:10px 0 3px 0;float:right;margin-top:-60px;"
+                          class="btn btn-lg btn-primary mb-2"
+                          @click="${() => this.importSource(name)}"
+                          >Import</a
             >
           </div>
         </div>
       `;
     });
 
-	const importedDeploymentsList = Object.keys(this.importedDeployments).map((name, index) => {
-	  var deploymentsList =  Object.keys(this.importedDeployments[name]).map((alias, i) => {
-		var address = this.importedDeployments[name][alias].address
-		var contractType = this.importedDeployments[name][alias].contractType
-		return html`
-		  <div class="card" style="margin-top:7px">
-			<div class="card-body" style="padding: 7px">
-			  <h3 class="card-title">${alias}</h3>
-			  <p><b>Address:</b> ${address}</p>
-			  <p><b>Contract Type:</b> ${contractType}</p>
-			  <button
-				type="submit"
-				style="margin:10px 0 3px 0; float:right; margin-top:-80px;"
-				class="btn btn-lg btn-primary mb-2"
-				@click="${() => this.importDeployment(contractType, alias)}"
-				>Import ABI</a
-			  >
-			</div>
-		  </div>
-		`;
-	  });
-	  return html`<h3><b>${getBlockchainFromUri(name)}</b></h3>${deploymentsList}`
+        const importedDeploymentsList = Object.keys(this.importedDeployments).map((name, index) => {
+          const deploymentsList =  Object.keys(this.importedDeployments[name]).map((alias, i) => {
+                const address = this.importedDeployments[name][alias].address;
+                const contractType = this.importedDeployments[name][alias].contractType;
+                return html`
+                  <div class="card" style="margin-top:7px">
+                        <div class="card-body" style="padding: 7px">
+                          <h3 class="card-title">${alias}</h3>
+                          <p><b>Address:</b> ${address}</p>
+                          <p><b>Contract Type:</b> ${contractType}</p>
+                          <button
+                                type="submit"
+                                style="margin:10px 0 3px 0; float:right; margin-top:-80px;"
+                                class="btn btn-lg btn-primary mb-2"
+                                @click="${() => this.importDeployment(contractType, alias)}"
+                                >Import ABI</a
+                          >
+                        </div>
+                  </div>
+                `;
+          });
+          return html`<h3><b>${getBlockchainFromUri(name)}</b></h3>${deploymentsList}`;
     });
-
 
     const manifests = Object.keys(this.manifests).map((name, index) => {
       return html`
@@ -580,23 +590,23 @@ export class ethpmDapp extends LitElement {
           <div class="card-body" style="padding: 7px">
             <h5 class="card-title">${name}</h5>
             <h6 class="card-subtitle mb-2 text-muted">
-			  <p>${this.manifests[name].ipfsUri.href}</p>
+                          <p>${this.manifests[name].ipfsUri.href}</p>
             </h6>
             <a
-			  href="http://explorer.ethpm.com/manifest/${this.manifests[name].ipfsUri.pathname.substring(2)}"
-			  style="margin:10px 0 3px 0"
+                          href="http://explorer.ethpm.com/manifest/${this.manifests[name].ipfsUri.pathname.substring(2)}"
+                          style="margin:10px 0 3px 0"
               class="btn btn-sm btn-primary mb-2"
               target="_blank"
               >Manifest Preview</a
             >
-			<button
-			  type="submit"
-			  style="margin:10px 0 3px 0"
-			  class="btn btn-sm btn-primary mb-2"
-			  @click="${() => this.downloadRawManifest(name)}"
-			>
-			  Download Raw Manifest
-			</button>
+                        <button
+                          type="submit"
+                          style="margin:10px 0 3px 0"
+                          class="btn btn-sm btn-primary mb-2"
+                          @click="${() => this.downloadRawManifest(name)}"
+                        >
+                          Download Raw Manifest
+                        </button>
           </div>
         </div>
       `;
@@ -627,15 +637,15 @@ export class ethpmDapp extends LitElement {
         }
       </style>
       <main>
-		<h2>
-		  <img src="./ethpmlogo.png" width="150" style="float:right;"/>
-		  <b>ethPM</b>
-		  <h4>
-			<a href="https://docs.ethpm.com" target="_blank">documentation </a> | 
-			<a href="https://gitter.im/ethpm/Lobby" target="_blank"> gitter</a>
-		  </h4>
-		</h2>
-		<button
+                <h2>
+                  <img src="./ethpmlogo.png" width="150" style="float:right;"/>
+                  <b>ethPM</b>
+                  <h4>
+                        <a href="https://docs.ethpm.com/ethpm-developer-guide/ethpm-and-remix-ide" target="_blank">documentation </a> |
+                        <a href="https://gitter.im/ethpm/Lobby" target="_blank"> gitter</a>
+                  </h4>
+                </h2>
+                <button
           type="submit"
           style="margin:10px 0 3px 0"
           class="btn btn-lg btn-primary mb-2"
@@ -644,7 +654,7 @@ export class ethpmDapp extends LitElement {
         >
           Create a Package
         </button>
-		<button
+                <button
           type="submit"
           style="margin:10px 0 3px 0"
           class="btn btn-lg btn-primary mb-2"
@@ -653,20 +663,20 @@ export class ethpmDapp extends LitElement {
         >
           Import a Package
         </button>
-		<div id='creatingPackages'>
-		  <div style="margin: 10px 0  0 0" id="form">${form}</div>
-		  <div id="alerts" style="margin: 0 0  0 0">${contractAlerts}</div>
-		  <div class="list-group" id="manifests">${manifests}</div>
-		</div>
-		<div id='importingPackages' style='display:none;'>
-		<div id="alerts" style="margin: 0 0  0 0">${contractAlerts}</div>
-		  ${importManifests}
-		  ${sourcesHeader}
-		  ${importedSourcesList}
-		  <br>
-		  ${deploymentsHeader}
-		  ${importedDeploymentsList}
-		</div>
+                <div id='creatingPackages'>
+                  <div style="margin: 10px 0  0 0" id="form">${form}</div>
+                  <div id="alerts" style="margin: 0 0  0 0">${contractAlerts}</div>
+                  <div class="list-group" id="manifests">${manifests}</div>
+                </div>
+                <div id='importingPackages' style='display:none;'>
+                <div id="alerts" style="margin: 0 0  0 0">${contractAlerts}</div>
+                  ${importManifests}
+                  ${sourcesHeader}
+                  ${importedSourcesList}
+                  <br>
+                  ${deploymentsHeader}
+                  ${importedDeploymentsList}
+                </div>
       </main>
     `;
   }

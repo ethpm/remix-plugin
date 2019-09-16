@@ -2,9 +2,9 @@
  * @module "ethpm/registries"
  */
 
-import { URL } from "url";
+import { URL } from 'url';
 
-import * as pkg from "../package";
+import * as pkg from '../package';
 
 export interface Service {
   /**
@@ -21,7 +21,6 @@ export interface Service {
      */
     releases (): Promise<IterableIterator<Promise<pkg.Version>>>;
 
-
     /**
      * Retrieve manifest URI for specific version
      */
@@ -34,6 +33,6 @@ export interface Service {
   publish (
     packageName: pkg.PackageName,
     version: pkg.Version,
-    manifest: URL
-  ): Promise<any>
+    manifest: URL,
+  ): Promise<any>;
 }

@@ -2,11 +2,10 @@
  * @module "ethpm/session"
  */
 
-import * as config from "../config";
-import * as pkg from "../package";
-import * as manifests from "../manifests";
-import * as storage from "../storage";
-
+import * as config from '../config';
+import * as pkg from '../package';
+import * as manifests from '../manifests';
+import * as storage from '../storage';
 
 export class Query<T extends config.Config> {
   package: pkg.Package;
@@ -15,7 +14,7 @@ export class Query<T extends config.Config> {
 
   constructor (options: {
     package: pkg.Package,
-    workspace: config.Workspace<T>
+    workspace: config.Workspace<T>,
   }) {
     this.package = options.package;
     this.workspace = options.workspace;
@@ -35,7 +34,7 @@ export class Query<T extends config.Config> {
   async contractType(ref: pkg.ContractTypeReference)
     : Promise<pkg.ContractType>
   {
-    const terms = ref.split(":");
+    const terms = ref.split(':');
 
     const packages = terms.slice(0, -1);
     const type = terms.slice(-1);
@@ -44,7 +43,7 @@ export class Query<T extends config.Config> {
 
     if (dependencyName) {
       const subquery = await this.scope(dependencyName);
-      const innerRef = [...rest, type].join(":");
+      const innerRef = [...rest, type].join(':');
 
       return await subquery.contractType(innerRef);
     }
@@ -55,11 +54,11 @@ export class Query<T extends config.Config> {
 
   async contractInstance(
     chain: pkg.ChainURI,
-    name: pkg.ContractInstanceName
+    name: pkg.ContractInstanceName,
   )
     : Promise<pkg.ContractInstance>
   {
-    const deployment = this.package.deployments.get(chain)
+    const deployment = this.package.deployments.get(chain);
     if (deployment === undefined) {
       throw new Error(`Could not find deployment at chain ${chain.href}`);
     }
@@ -75,12 +74,12 @@ export class Query<T extends config.Config> {
   async buildDependency(name: pkg.PackageName)
     : Promise<pkg.Package> | never
   {
-    if (!("storage" in this.workspace)) {
-      throw new Error("Storage not configured!");
+    if (!('storage' in this.workspace)) {
+      throw new Error('Storage not configured!');
     }
 
-    if (!("manifests" in this.workspace)) {
-      throw new Error("Manifests not configured!");
+    if (!('manifests' in this.workspace)) {
+      throw new Error('Manifests not configured!');
     }
 
     const workspace = <

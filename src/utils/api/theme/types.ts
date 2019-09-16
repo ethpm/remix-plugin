@@ -1,4 +1,4 @@
 export interface Theme {
-  url: string
-  quality: 'dark' | 'light'
+  url: string;
+  quality: 'dark' | 'light';
 }

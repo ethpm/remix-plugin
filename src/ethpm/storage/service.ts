@@ -2,7 +2,7 @@
  * @module "ethpm/storage"
  */
 
-import { Maybe } from "../types";
+import { Maybe } from '../types';
 
 export interface Service {
   read (uri: URL): Promise<Maybe<string>>;

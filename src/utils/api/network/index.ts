@@ -1,3 +1,3 @@
-export * from './api'
-export * from './type'
-export * from './profile'
+export * from './api';
+export * from './type';
+export * from './profile';

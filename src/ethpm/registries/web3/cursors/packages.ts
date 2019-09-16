@@ -2,11 +2,11 @@
  * @module "ethpm/registries/web3"
  */
 
-import Paged from "./paged";
+import Paged from './paged';
 
-import * as pkg from "../../../package";
-import BN from "bn.js";
-import Web3 from "web3";
+import * as pkg from '../../../package';
+import BN from 'bn.js';
+import Web3 from 'web3';
 
 type ResultType = Promise<pkg.PackageName>;
 
@@ -30,24 +30,24 @@ export default class PackagesCursor extends Paged<BN> implements IterableIterato
     const promise: ResultType = new Promise((resolve, reject) => {
       const packageId = this.getDatum(this.pointer);
       if (packageId === null) {
-        resolve(""); // TODO: empty string or something else?
+        resolve(''); // TODO: empty string or something else?
       }
       else {
         const data = this.web3.eth.abi.encodeFunctionCall({
-          name: "getPackageName",
-          type: "function",
+          name: 'getPackageName',
+          type: 'function',
           inputs: [{
-            type: "uint",
-            name: "packageId"
-          }]
-        }, ["0x" + packageId.toString("hex")]);
+            type: 'uint',
+            name: 'packageId',
+          }],
+        },                                                [`0x${packageId.toString('hex')}`]);
 
         this.web3.eth.call({
           from: this.from,
           to: this.to,
-          data
+          data,
         }).then((result) => {
-          resolve(this.web3.eth.abi.decodeParameter("string", result).toString());
+          resolve(this.web3.eth.abi.decodeParameter('string', result).toString());
         });
       }
     });
@@ -56,7 +56,7 @@ export default class PackagesCursor extends Paged<BN> implements IterableIterato
 
     return {
       done: true,
-      value: promise
+      value: promise,
     };
   }
 
@@ -72,27 +72,27 @@ export default class PackagesCursor extends Paged<BN> implements IterableIterato
         const limit = offset.add(this.pageSize).subn(1);
 
         const data = this.web3.eth.abi.encodeFunctionCall({
-          name: "getAllPackageIds",
-          type: "function",
+          name: 'getAllPackageIds',
+          type: 'function',
           inputs: [{
-            type: "uint",
-            name: "offset"
+            type: 'uint',
+            name: 'offset',
           }, {
-            type: "uint",
-            name: "limit"
-          }]
-        }, ["0x" + offset.toString("hex"), "0x" + limit.toString("hex")]);
+            type: 'uint',
+            name: 'limit',
+          }],
+        },                                                [`0x${offset.toString('hex')}`, `0x${limit.toString('hex')}`]);
 
         const promise: ResultType = new Promise((resolve, reject) => {
           return this.web3.eth.call({
             from: this.from,
             to: this.to,
-            data
+            data,
           }).then((result) => {
             // split packageIds into an array of BNs
             // set the page
             // get/resolve the datum
-            const results = this.web3.eth.abi.decodeParameters(["bytes32[]", "uint"], result);
+            const results = this.web3.eth.abi.decodeParameters(['bytes32[]', 'uint'], result);
             const packageIds = results[0].map((id: string) => new BN(id));
             this.setPage(this.pointer, packageIds);
             return this.getName();
@@ -101,20 +101,20 @@ export default class PackagesCursor extends Paged<BN> implements IterableIterato
 
         return {
           done: true,
-          value: promise
+          value: promise,
         };
       }
     } else {
       const promise: ResultType = new Promise((resolve, reject) => {
-        resolve(""); // TODO: empty string or something else?
+        resolve(''); // TODO: empty string or something else?
       });
 
       this.pointer = this.pointer.addn(1);
 
       return {
         done: true,
-        value: promise
-      }
+        value: promise,
+      };
     }
   }
 
