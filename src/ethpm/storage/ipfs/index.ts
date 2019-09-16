@@ -37,19 +37,13 @@ export class IpfsService implements storage.Service {
   }
 
   async write(content: string): Promise<URL> {
-	console.log('writing to ipfs')
     const buffer = this.ipfs.types.Buffer.from(content);
     const [{ hash }] = await this.ipfs.add(buffer);
-	console.log(hash)
     return new URL(`ipfs://${hash}`);
   }
 
   async read(uri: URL): Promise<Maybe<string>> {
-	console.log('reading from ipfs')
-	console.log(uri)
     const hash = uri.toString().substring(7)
-	console.log(hash)
-
     const buffer = await this.ipfs.cat(hash);
 
     return buffer.toString();
