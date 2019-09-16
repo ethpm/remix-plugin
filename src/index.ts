@@ -41,8 +41,8 @@ type manifestMap = {
   [name: string]: manifest;
 };
 
-@customElement('one-click-dapp')
-export class OneClickDapp extends LitElement {
+@customElement('ethpm-dapp')
+export class ethpmDapp extends LitElement {
   /** client to communicate with the IDE */
   private client = createIframeClient();
   private contractTypes: ContractTypeMap = {};
@@ -181,7 +181,7 @@ export class OneClickDapp extends LitElement {
   }
 
   downloadRawManifest(name) {
-	var fileName = 'myData.json';
+	var fileName = `${name}.json`;
 	var fileToSave = new Blob([JSON.stringify(this.manifests[name].manifest)], {
 		type: 'application/json',
 	});
@@ -584,12 +584,11 @@ export class OneClickDapp extends LitElement {
             </h6>
             <a
 			  href="http://explorer.ethpm.com/manifest/${this.manifests[name].ipfsUri.pathname.substring(2)}"
+			  style="margin:10px 0 3px 0"
               class="btn btn-sm btn-primary mb-2"
               target="_blank"
               >Manifest Preview</a
             >
-			<br>
-			<a id="downloadAnchorElem" style="display:none"></a>
 			<button
 			  type="submit"
 			  style="margin:10px 0 3px 0"
@@ -634,7 +633,6 @@ export class OneClickDapp extends LitElement {
 		  <h4>
 			<a href="https://docs.ethpm.com" target="_blank">documentation </a> | 
 			<a href="https://gitter.im/ethpm/Lobby" target="_blank"> gitter</a>
-			<a>test</a>
 		  </h4>
 		</h2>
 		<button
