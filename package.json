@@ -30,7 +30,7 @@
     "ipfs-unixfs": "^0.1.16",
     "ipld-dag-pb": "^0.18.1",
     "json-stable-stringify": "^1.0.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "net": "^1.0.2",
     "original-require": "^1.0.1",
     "remixd": "^0.1.8-alpha.7",
