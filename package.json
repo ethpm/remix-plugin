@@ -60,7 +60,7 @@
     "gulp-sourcemaps": "^2.6.4",
     "gulp-typedoc": "^2.2.0",
     "gulp-typescript": "^5.0.0-alpha.3",
-    "ipfs": "^0.34.4",
+    "ipfs": "^0.65.0",
     "ipfsd-ctl": "^0.42.0",
     "jest": "^24.1.0",
     "lit-element": "^2.1.0",
